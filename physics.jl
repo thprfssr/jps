@@ -5,3 +5,9 @@ import Base: @kwdef
 	charge = 0
 	radius = 0
 end
+
+struct Force
+	parameters::Dict
+	evaluate::Function
+	can_act_on::Function
+end
