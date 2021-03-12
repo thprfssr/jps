@@ -1,37 +1,35 @@
 using Match
 
-import Base: +, -, *, /, print, promote_rule, convert, show
+import Base: +, -, *, /, print, promote_rule, convert, show, @kwdef
 
 abstract type AbstractMultivec end
 
-struct Multivec <: AbstractMultivec
-	s
-	x
-	y
-	z
-	ix
-	iy
-	iz
-	i
+@kwdef struct Multivec <: AbstractMultivec
+	s = 0
+	x = 0
+	y = 0
+	z = 0
+	ix = 0
+	iy = 0
+	iz = 0
+	i = 0
 end
 
-struct Vec <: AbstractMultivec
-	x
-	y
-	z
+@kwdef struct Vec <: AbstractMultivec
+	x = 0
+	y = 0
+	z = 0
 end
-
-
 
 # Define constant vectors
-O = Vec(0, 0, 0)
-X = Vec(1, 0, 0)
-Y = Vec(0, 1, 0)
-Z = Vec(0, 0, 1)
-IX = Multivec(0, 0, 0, 0, 1, 0, 0, 0)
-IY = Multivec(0, 0, 0, 0, 0, 1, 0, 0)
-IZ = Multivec(0, 0, 0, 0, 0, 0, 1, 0)
-I = Multivec(0, 0, 0, 0, 0, 0, 0, 1)
+O = Vec()
+X = Vec(x = 1)
+Y = Vec(y = 1)
+Z = Vec(z = 1)
+IX = Multivec(ix = 1)
+IY = Multivec(iy = 1)
+IZ = Multivec(iz = 1)
+I = Multivec(i = 1)
 
 # Define common vector operations
 (+)(u::Vec) = u
@@ -61,8 +59,8 @@ function normalize(u::Vec)
 end
 
 # Define vector-to-multivector conversion rule
-convert(::Type{Multivec}, u::Vec) = Multivec(0, u.x, u.y, u.z, 0, 0, 0, 0)
-convert(::Type{Multivec}, s::T) where {T<:Number} = Multivec(s,0,0,0,0,0,0,0)
+convert(::Type{Multivec}, u::Vec) = Multivec(x = u.x, y = u.y, z = u.z)
+convert(::Type{Multivec}, s::T) where {T<:Number} = Multivec(s = s)
 promote_rule(::Type{Multivec}, ::Type{Vec}) = Multivec
 function promote_rule(::Type{M}, ::Type{T}) where
 	{T<:Number,M<:AbstractMultivec}
