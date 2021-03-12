@@ -170,3 +170,35 @@ function show(io::IO, u::AbstractMultivec)
 		print(representation)
 	end
 end
+
+function wedge(u::AbstractMultivec, v::AbstractMultivec)
+	u = convert(Multivec, u)
+	v = convert(Multivec, v)
+	ar,ax,ay,az,aix,aiy,aiz,ai = u.s,u.x,u.y,u.z,u.ix,u.iy,u.iz,u.i
+	br,bx,by,bz,bix,biy,biz,bi = v.s,v.x,v.y,v.z,v.ix,v.iy,v.iz,v.i
+	cr = ar*br
+	cx = ar*bx+ax*br
+	cy = ar*by+ay*br
+	cz = ar*bz+az*br
+	cix = ar*bix+ay*bz-az*by+aix*br
+	ciy = ar*biy-ax*bz+az*bx+aiy*br
+	ciz = ar*biz+ax*by-ay*bx+aiz*br
+	ci = ar*bi+ax*bix+ay*biy+az*biz+aix*bx+aiy*by+aiz*bz+ai*br
+	return Multivec(cr, cx, cy, cz, cix, ciy, ciz, ci)
+end
+
+function dot(u::AbstractMultivec, v::AbstractMultivec)
+	u = convert(Multivec, u)
+	v = convert(Multivec, v)
+	ar,ax,ay,az,aix,aiy,aiz,ai = u.s,u.x,u.y,u.z,u.ix,u.iy,u.iz,u.i
+	br,bx,by,bz,bix,biy,biz,bi = v.s,v.x,v.y,v.z,v.ix,v.iy,v.iz,v.i
+	cr = ar*br+ax*bx+ay*by+az*bz-aix*bix-aiy*biy-aiz*biy-ai*bi
+	cx = ar*bx+ax*br-ay*biz+az*biy-aix*bi-aiy*bz+aiz*by-ai*bix
+	cy = ar*by+ax*biz+ay*br-az*bix+aix*bz-aiy*bi-aiz*bx-ai*biy
+	cz = ar*bz-ax*biy+ay*bix+az*br-aix*by+aiy*bx-aiz*bi-ai*biz
+	cix = ar*bix+ax*bi+aix*br+ai*bx
+	ciy = ar*biy+ay*bi+aiy*br+ai*by
+	ciz = ar*biz+az*bi+aiz*br+ai*bz
+	ci = ar*bi+ai*br
+	return Multivec(cr, cx, cy, cz, cix, ciy, ciz, ci)
+end
