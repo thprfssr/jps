@@ -1,6 +1,6 @@
 using Match
 
-import Base: +, -, *, /, print, promote_rule, convert
+import Base: +, -, *, /, print, promote_rule, convert, show
 
 abstract type AbstractMultivec end
 
@@ -72,6 +72,8 @@ end
 # Define common operations to be promoted
 (+)(u, v) = (+)(promote(u, v)...)
 (-)(u, v) = (-)(promote(u, v)...)
+(*)(u::Vec, v::AbstractMultivec) = (*)(promote(u, v)...)
+(*)(u::AbstractMultivec, v::Vec) = (*)(promote(u, v)...)
 
 # Define common multivector operations
 
@@ -136,5 +138,35 @@ function grade(u::Multivec, n::Number)
 		2 => return u.ix * IX + u.iy * IY + u.iz * IZ
 		3 => return u.i * I
 		_ => return 0
+	end
+end
+
+function show(io::IO, u::AbstractMultivec)
+	u = convert(Multivec, u)
+	B = ("1", "X", "Y", "Z", "IX", "IY", "IZ", "I")
+	R = (u.s, u.x, u.y, u.z, u.ix, u.iy, u.iz, u.i)
+	S = ("", "", "", "", "", "", "", "")
+	representation = ""
+	for i in 1:8
+		s = @match R[i] begin
+			0	=> ""
+			1	=> B[i]
+			-1	=> "-" * B[i]
+			_	=> string(R[i]) * "*" * B[i]
+		end
+
+		if s != ""
+			if representation != ""
+				representation *= " + "
+			end
+
+			representation *= s
+		end
+	end
+
+	if representation == ""
+		print("O")
+	else
+		print(representation)
 	end
 end
