@@ -37,20 +37,20 @@ end
 end
 
 function position(p::Particle, state::Dict)
-	position, velocity = state[p]
-	return position
+	pos, vel = state[p]
+	return pos
 end
 
 function velocity(p::Particle, state::Dict)
-	position, velocity = state[p]
-	return velocity
+	pos, vel = state[p]
+	return vel
 end
 
 function acceleration(p::Particle, state::Dict)
-	position, velocity = state[p]
-	F = 0
+	F = O
 	for f in p.forces
-		F += evaluate(f, p)
+		F += apply(f, p, state)
+	end
 	return F / p.mass
 end
 
