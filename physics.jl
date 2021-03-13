@@ -1,5 +1,6 @@
 import Base: @kwdef
 
+include("vec.jl")
 
 # Define Force, Particle, and System
 
@@ -17,10 +18,11 @@ function create_particle(S::System;
 		velocity::Vec = O)
 	p = Particle(mass = mass, charge = charge, radius = radius)
 	S.state[p] = (position, velocity)
+	return p
 end
 
 function add_force(S::System, F::Force)
-	for p in S.particles
+	for p in keys(S.state)
 		if can_act_on(F, p)
 			push!(p.forces, F)
 		end
@@ -42,6 +44,14 @@ end
 function velocity(p::Particle, state::Dict)
 	position, velocity = state[p]
 	return velocity
+end
+
+function acceleration(p::Particle, state::Dict)
+	position, velocity = state[p]
+	F = 0
+	for f in p.forces
+		F += evaluate(f, p)
+	return F / p.mass
 end
 
 #### Uniform Gravitational Field ####
