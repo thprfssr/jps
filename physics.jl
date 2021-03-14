@@ -184,3 +184,29 @@ function apply(F::UniformMagneticField, p::Particle, state)
 	v = velocity(p, state)
 	return p.charge * cross(v, F.B * F.up)
 end
+
+
+#### Spring Force ####
+
+@kwdef struct Spring <: Force
+	k = 1
+	L = 1
+	pa::Particle
+	pb::Particle
+end
+
+can_act_on(F::Spring, p::Particle) = (p in (F.pa, F.pb))
+function apply(F::Spring, p::Particle, state)
+	ra = position(F.pa, state)
+	rb = position(F.pb, state)
+	u = rb - ra
+	n = normalize(u)
+	compression = norm(u) - F.L
+	if p == F.pa
+		return n * F.k * compression
+	elseif p == F.pb
+		return -n * F.k * compression
+	else
+		return O
+	end
+end
