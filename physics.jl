@@ -1,3 +1,5 @@
+using DifferentialEquations
+
 import Base: @kwdef
 
 include("vec.jl")
@@ -56,13 +58,22 @@ function acceleration(p::Particle, state::Dict)
 	return F / p.mass
 end
 
+# TODO: Perhaps it would me more efficient for Forces to work directly with
+# a state matrix, rather than with a state dict. That would save some time,
+# because it eliminates the need to convert between the two types. Perhaps
+# each particle could store its own integer ID.
+
 function __state_dict_to_matrix(state::Dict, S::System)
-	A = reshape([], 0, 6) # Make empty six-row matrix
+	A = nothing
 	for p in S.particles
 		pos, vel = state[p]
 		rx, ry, rz = pos.x, pos.y, pos.z
 		vx, vy, vz = vel.x, vel.y, vel.z
-		A = [A; rx ry rz vx vy vz]
+		if A == nothing
+			A = [rx ry rz vx vy vz]
+		else
+			A = [A; rx ry rz vx vy vz]
+		end
 	end
 	return A
 end
@@ -80,6 +91,27 @@ function __state_matrix_to_dict(state_matrix, S::System)
 	end
 	return state
 end
+
+function state_derivative(state_matrix, S::System, t)
+	state = __state_matrix_to_dict(state_matrix, S)
+	diff = Dict()
+	for p in S.particles
+		pos, vel = state[p]
+		acc = acceleration(p, state)
+		diff[p] = (vel, acc)
+	end
+	return __state_dict_to_matrix(diff, S)
+end
+
+function update(S, dt)
+	M = __state_dict_to_matrix(S.state, S)
+	tspan = (0, dt)
+	prob = ODEProblem(state_derivative, M, tspan, S)
+	sol = solve(prob)
+	S.state = __state_matrix_to_dict(sol(dt), S)
+end
+
+
 
 #### Uniform Gravitational Field ####
 
