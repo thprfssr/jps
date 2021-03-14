@@ -9,7 +9,7 @@ include("vec.jl")
 abstract type Force end
 
 @kwdef mutable struct System
-	state::Dict = Dict()
+	state = nothing
 	particles::Array = []
 end
 
@@ -17,11 +17,23 @@ function create_particle(S::System;
 		mass = 1,
 		charge = 0,
 		radius = 0,
-		position::Vec = O,
-		velocity::Vec = O)
+		pos::Vec = O,
+		vel::Vec = O)
+
+	# Push the state of the particle into the system's state matrix
+	rx, ry, rz = pos.x, pos.y, pos.z
+	vx, vy, vz = vel.x, vel.y, vel.z
+	if S.state == nothing
+		S.state = [rx ry rz vx vy vz]
+	else
+		S.state = [S.state; rx ry rz vx vy vz]
+	end
+
+	# Actually create the particle
 	p = Particle(mass = mass, charge = charge, radius = radius)
-	S.state[p] = (position, velocity)
 	push!(S.particles, p)
+	p._id = length(S.particles)
+
 	return p
 end
 
@@ -38,19 +50,18 @@ end
 	charge = 0
 	radius = 0
 	forces::Set = Set()
+	_id::Integer = 0
 end
 
-function position(p::Particle, state::Dict)
-	pos, vel = state[p]
-	return pos
+function position(p::Particle, state)
+	return Vec(state[p._id, 1:3]...)
 end
 
-function velocity(p::Particle, state::Dict)
-	pos, vel = state[p]
-	return vel
+function velocity(p::Particle, state)
+	return Vec(state[p._id, 4:6]...)
 end
 
-function acceleration(p::Particle, state::Dict)
+function acceleration(p::Particle, state)
 	F = O
 	for f in p.forces
 		F += apply(f, p, state)
@@ -58,57 +69,27 @@ function acceleration(p::Particle, state::Dict)
 	return F / p.mass
 end
 
-# TODO: Perhaps it would me more efficient for Forces to work directly with
-# a state matrix, rather than with a state dict. That would save some time,
-# because it eliminates the need to convert between the two types. Perhaps
-# each particle could store its own integer ID.
-
-function __state_dict_to_matrix(state::Dict, S::System)
-	A = nothing
+function state_derivative(state, S::System, t)
+	diff = nothing
 	for p in S.particles
-		pos, vel = state[p]
-		rx, ry, rz = pos.x, pos.y, pos.z
-		vx, vy, vz = vel.x, vel.y, vel.z
-		if A == nothing
-			A = [rx ry rz vx vy vz]
+		rx, ry, rz, vx, vy, vz = state[p._id, 1:6]
+		acc = acceleration(p, state)
+		ax, ay, az = acc.x, acc.y, acc.z
+
+		if diff == nothing
+			diff = [vx vy vz ax ay az]
 		else
-			A = [A; rx ry rz vx vy vz]
+			diff = [diff; vx vy vz ax ay az]
 		end
 	end
-	return A
-end
-
-function __state_matrix_to_dict(state_matrix, S::System)
-	i = 1
-	state = Dict()
-	for p in S.particles
-		rx, ry, rz, vx, vy, vz = state_matrix[i,1:6]
-		pos = Vec(rx, ry, rz)
-		vel = Vec(vx, vy, vz)
-		state[p] = (pos, vel)
-
-		i += 1
-	end
-	return state
-end
-
-function state_derivative(state_matrix, S::System, t)
-	state = __state_matrix_to_dict(state_matrix, S)
-	diff = Dict()
-	for p in S.particles
-		pos, vel = state[p]
-		acc = acceleration(p, state)
-		diff[p] = (vel, acc)
-	end
-	return __state_dict_to_matrix(diff, S)
+	return diff
 end
 
 function update(S, dt)
-	M = __state_dict_to_matrix(S.state, S)
-	tspan = (0, dt)
-	prob = ODEProblem(state_derivative, M, tspan, S)
+	tspan = (0.0, dt)
+	prob = ODEProblem(state_derivative, S.state, tspan, S)
 	sol = solve(prob)
-	S.state = __state_matrix_to_dict(sol(dt), S)
+	S.state = sol(dt)
 end
 
 
@@ -120,8 +101,18 @@ end
 	up = Z
 end
 
-function apply(F::UniformGravity, p::Particle, state::Dict)
+can_act_on(F::UniformGravity, p::Particle) = true
+function apply(F::UniformGravity, p::Particle, state)
 	return - p.mass * F.g * F.up
 end
 
-can_act_on(F::UniformGravity, p::Particle) = true
+#### Simple Drag ####
+
+@kwdef struct LinearDrag <: Force
+	beta = 1
+end
+
+can_act_on(F::LinearDrag, p::Particle) = true
+function apply(F::LinearDrag, p::Particle, state)
+	return -F.beta * velocity(p, state)
+end
