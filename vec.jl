@@ -58,6 +58,13 @@ function normalize(u::Vec)
 	end
 end
 
+function cross(u::Vec, v::Vec)
+	x = u.y * v.z - u.z * v.y
+	y = u.z * v.x - u.x * v.z
+	z = u.x * v.y - u.y * v.x
+	return Vec(x, y, z)
+end
+
 # Define vector-to-multivector conversion rule
 convert(::Type{Multivec}, u::Vec) = Multivec(x = u.x, y = u.y, z = u.z)
 convert(::Type{Multivec}, s::T) where {T<:Number} = Multivec(s = s)
