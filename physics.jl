@@ -1,4 +1,5 @@
 using DifferentialEquations
+using Printf
 
 import Base: @kwdef
 
@@ -10,6 +11,8 @@ abstract type Force end
 
 @kwdef mutable struct System
 	state = nothing
+	time = 0
+	history = nothing
 	particles::Array = []
 end
 
@@ -18,7 +21,9 @@ function create_particle(S::System;
 		charge = 0,
 		radius = 0,
 		pos::Vec = O,
-		vel::Vec = O)
+		vel::Vec = O,
+		is_static = false,
+		)
 
 	# Push the state of the particle into the system's state matrix
 	rx, ry, rz = pos.x, pos.y, pos.z
@@ -30,7 +35,7 @@ function create_particle(S::System;
 	end
 
 	# Actually create the particle
-	p = Particle(mass = mass, charge = charge, radius = radius)
+	p = Particle(mass = mass, charge = charge, radius = radius, is_static = is_static)
 	push!(S.particles, p)
 	p._id = length(S.particles)
 
@@ -50,6 +55,7 @@ end
 	charge = 0
 	radius = 0
 	forces::Set = Set()
+	is_static::Bool = false
 	_id::Integer = 0
 end
 
@@ -62,6 +68,10 @@ function velocity(p::Particle, state)
 end
 
 function acceleration(p::Particle, state)
+	if p.is_static
+		return O
+	end
+
 	F = O
 	for f in p.forces
 		F += apply(f, p, state)
@@ -90,7 +100,17 @@ function update(S, dt)
 	prob = ODEProblem(state_derivative, S.state, tspan, S)
 	sol = solve(prob)
 	S.state = sol(dt)
+	S.time += dt
 	return sol
+end
+
+function print_state_snapshot(S::System)
+	for p in S.particles
+		rx, ry, rz, vx, vy, vz = S.state[p._id, 1:6]
+		println(S.time, '\t', p._id, '\t',
+			rx, '\t', ry, '\t', rz, '\t',
+			vx, '\t', vy, '\t', vz)
+	end
 end
 
 
