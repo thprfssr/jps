@@ -11,7 +11,7 @@ for i = 1:M*N
 end
 
 for i = 1:N
-	theta = 2*pi/N
+	theta = 2*pi/N * i
 	create_particle(S, mass = Inf, is_static = true,
 			pos = R * (X * cos(theta) + Y * sin(theta)))
 end
