@@ -12,6 +12,7 @@ add_force(S, D)
 add_force(S, B)
 
 while true
-	update(S, 0.01)
-	println(velocity(p, S.state))
+	update(S, 1)
+	#println(velocity(p, S.state))
+	print_state_snapshot(S)
 end
