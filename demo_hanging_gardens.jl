@@ -18,7 +18,7 @@ end
 
 # Connect the mesh to the top ring
 for i = 1:N
-	F = Spring(pa = S.particles[i], pb = S.particles[i + N])
+	F = Spring(pa = S.particles[i], pb = S.particles[i + M*N])
 	add_force(S, F)
 end
 
