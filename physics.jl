@@ -22,7 +22,7 @@ function create_particle(S::System;
 		radius = 0,
 		pos::Vec = O,
 		vel::Vec = O,
-		is_static = false,
+		is_fixed = false,
 		)
 
 	# Push the state of the particle into the system's state matrix
@@ -35,9 +35,9 @@ function create_particle(S::System;
 	end
 
 	# Actually create the particle
-	p = Particle(mass = mass, charge = charge, radius = radius, is_static = is_static)
+	p = Particle(mass = mass, charge = charge, radius = radius, is_fixed = is_fixed)
 	push!(S.particles, p)
-	p._id = length(S.particles)
+	p.identifier = length(S.particles)
 
 	return p
 end
@@ -55,20 +55,20 @@ end
 	charge = 0
 	radius = 0
 	forces::Set = Set()
-	is_static::Bool = false
-	_id::Integer = 0
+	is_fixed::Bool = false
+	identifier::Integer = 0
 end
 
 function position(p::Particle, state)
-	return Vec(state[p._id, 1:3]...)
+	return Vec(state[p.identifier, 1:3]...)
 end
 
 function velocity(p::Particle, state)
-	return Vec(state[p._id, 4:6]...)
+	return Vec(state[p.identifier, 4:6]...)
 end
 
 function acceleration(p::Particle, state)
-	if p.is_static
+	if p.is_fixed
 		return O
 	end
 
@@ -82,7 +82,7 @@ end
 function state_derivative(state, S::System, t)
 	diff = nothing
 	for p in S.particles
-		rx, ry, rz, vx, vy, vz = state[p._id, 1:6]
+		rx, ry, rz, vx, vy, vz = state[p.identifier, 1:6]
 		acc = acceleration(p, state)
 		ax, ay, az = acc.x, acc.y, acc.z
 
@@ -106,8 +106,8 @@ end
 
 function print_state_snapshot(S::System)
 	for p in S.particles
-		rx, ry, rz, vx, vy, vz = S.state[p._id, 1:6]
-		println(S.time, '\t', p._id, '\t',
+		rx, ry, rz, vx, vy, vz = S.state[p.identifier, 1:6]
+		println(S.time, '\t', p.identifier, '\t',
 			rx, '\t', ry, '\t', rz, '\t',
 			vx, '\t', vy, '\t', vz)
 	end
