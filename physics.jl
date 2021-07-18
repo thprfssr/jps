@@ -22,7 +22,7 @@ function create_particle(S::System;
 		radius = 0,
 		pos::Vec = O,
 		vel::Vec = O,
-		is_static = false,
+		is_fixed = false,
 		)
 
 	# Push the state of the particle into the system's state matrix
@@ -35,7 +35,7 @@ function create_particle(S::System;
 	end
 
 	# Actually create the particle
-	p = Particle(mass = mass, charge = charge, radius = radius, is_static = is_static)
+	p = Particle(mass = mass, charge = charge, radius = radius, is_fixed = is_fixed)
 	push!(S.particles, p)
 	p._id = length(S.particles)
 
@@ -55,7 +55,7 @@ end
 	charge = 0
 	radius = 0
 	forces::Set = Set()
-	is_static::Bool = false
+	is_fixed::Bool = false
 	_id::Integer = 0
 end
 
@@ -68,7 +68,7 @@ function velocity(p::Particle, state)
 end
 
 function acceleration(p::Particle, state)
-	if p.is_static
+	if p.is_fixed
 		return O
 	end
 
