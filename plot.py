@@ -22,9 +22,10 @@ def get_particle_state(pid, t):
 
 fig = plt.figure()
 #ax = plt.axes(projection = '3d')
-ax = plt.axes()
+ax = fig.add_subplot(111, projection = '3d')
+sct, = ax.plot([], [], [], 'o', markersize=2)
 
-line, = ax.plot([], [], 'o')
+#line, = ax.plot([], [], 'o')
 
 '''
 X, Y, Z = [], [], []
@@ -42,12 +43,18 @@ for p in pids:
 
 def animate(i):
     t = times[i]
-    X = [get_particle_state(p, t)[0] for p in pids]
-    Y = [get_particle_state(p, t)[1] for p in pids]
-    Z = [get_particle_state(p, t)[2] for p in pids]
+    X = np.array([get_particle_state(p, t)[0] for p in pids])
+    Y = np.array([get_particle_state(p, t)[1] for p in pids])
+    Z = np.array([get_particle_state(p, t)[2] for p in pids])
 
-    line.set_data(X, Y)
-    return line
+    sct.set_data(X, Y)
+    sct.set_3d_properties(Z)
+    return sct
+
+
+ax.set_xlim(-6,6)
+ax.set_ylim(-6,6)
+ax.set_zlim(-12,12)
 
 ani = animation.FuncAnimation(
         fig, animate, 300)
