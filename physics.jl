@@ -114,6 +114,13 @@ function print_state_snapshot(S::System)
 end
 
 
+function run(S::System, dt)
+	println("t\tid\trx\try\trz\tvx\tvy\tvz")
+	while true
+		print_state_snapshot(S)
+		update(S, dt)
+	end
+end
 
 #### Uniform Gravitational Field ####
 
