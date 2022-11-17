@@ -1,9 +1,13 @@
 using DifferentialEquations
+using LinearAlgebra
 using Printf
 
 import Base: @kwdef
 
-include("vec.jl")
+O = [0, 0, 0]
+X = [1, 0, 0]
+Y = [0, 1, 0]
+Z = [0, 0, 1]
 
 # Define Force, Particle, and System
 
@@ -20,14 +24,14 @@ function create_particle(S::System;
 		mass = 1,
 		charge = 0,
 		radius = 0,
-		pos::Vec = O,
-		vel::Vec = O,
-		is_fixed = false,
+		position = O,
+		velocity = O,
+		is_static = false,
 		)
 
 	# Push the state of the particle into the system's state matrix
-	rx, ry, rz = pos.x, pos.y, pos.z
-	vx, vy, vz = vel.x, vel.y, vel.z
+	rx, ry, rz = position
+	vx, vy, vz = velocity
 	if S.state == nothing
 		S.state = [rx ry rz vx vy vz]
 	else
@@ -35,7 +39,12 @@ function create_particle(S::System;
 	end
 
 	# Actually create the particle
-	p = Particle(mass = mass, charge = charge, radius = radius, is_fixed = is_fixed)
+	p = Particle(
+		     mass = mass,
+		     charge = charge,
+		     radius = radius,
+		     is_static = is_static,
+		     )
 	push!(S.particles, p)
 	p.identifier = length(S.particles)
 
@@ -55,20 +64,20 @@ end
 	charge = 0
 	radius = 0
 	forces::Set = Set()
-	is_fixed::Bool = false
+	is_static::Bool = false
 	identifier::Integer = 0
 end
 
 function position(p::Particle, state)
-	return Vec(state[p.identifier, 1:3]...)
+	return state[p.identifier, 1:3]
 end
 
 function velocity(p::Particle, state)
-	return Vec(state[p.identifier, 4:6]...)
+	return state[p.identifier, 4:6]
 end
 
 function acceleration(p::Particle, state)
-	if p.is_fixed
+	if p.is_static
 		return O
 	end
 
@@ -82,9 +91,9 @@ end
 function state_derivative(state, S::System, t)
 	diff = nothing
 	for p in S.particles
-		rx, ry, rz, vx, vy, vz = state[p.identifier, 1:6]
-		acc = acceleration(p, state)
-		ax, ay, az = acc.x, acc.y, acc.z
+		rx, ry, rz = position(p, state)
+		vx, vy, vz = velocity(p, state)
+		ax, ay, az = acceleration(p, state)
 
 		if diff == nothing
 			diff = [vx vy vz ax ay az]
@@ -126,7 +135,7 @@ end
 
 @kwdef struct UniformGravity <: Force
 	g = 9.8
-	up::Vec = Z
+	up = Z
 end
 
 can_act_on(F::UniformGravity, p::Particle) = true
@@ -149,7 +158,7 @@ end
 #### Restoring Force ####
 
 @kwdef struct RestoringForce <: Force
-	center::Vec = O
+	center = O
 	k = 1
 end
 
@@ -176,7 +185,7 @@ end
 
 @kwdef struct UniformElectricField <: Force
 	E = 1
-	up::Vec = Z
+	up = Z
 end
 
 can_act_on(F::UniformElectricField, p::Particle) = (p.charge != 0)
@@ -189,7 +198,7 @@ end
 
 @kwdef struct BuoyantForce <: Force
 	rho = 1
-	up::Vec = Z
+	up = Z
 end
 
 can_act_on(F::BuoyantForce, p::Particle) = (p.radius != 0)
@@ -203,7 +212,7 @@ end
 
 @kwdef struct UniformMagneticField <: Force
 	B = 1
-	up::Vec = Z
+	up = Z
 end
 
 can_act_on(F::UniformMagneticField, p::Particle) = (p.charge != 0)
@@ -227,7 +236,7 @@ function apply(F::Spring, p::Particle, state)
 	ra = position(F.pa, state)
 	rb = position(F.pb, state)
 	u = rb - ra
-	n = normalize(u)
+	n = (u == O) ? O : normalize(u)
 	compression = norm(u) - F.L
 	if p == F.pa
 		return n * F.k * compression

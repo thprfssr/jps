@@ -12,8 +12,8 @@ end
 
 for i = 1:N
 	theta = 2*pi/N * i
-	create_particle(S, mass = Inf, is_fixed = true,
-			pos = R * (X * cos(theta) + Y * sin(theta)))
+	create_particle(S, mass = Inf, is_static = true,
+			position = R * (X * cos(theta) + Y * sin(theta)))
 end
 
 # Connect the mesh to the top ring
